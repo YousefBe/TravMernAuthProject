@@ -1,15 +1,42 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import FormContainer from "../components/FormContainer";
 import { Button, Col, Form, Row } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link , useNavigate } from "react-router-dom";
+import { useDispatch , useSelector } from "react-redux"
+import { useLoginMutation } from "../store/slices/usersApiSlice";
+import { setCredentials } from "../store/slices/authSlice";
+import {toast} from "react-toastify"
+import Loader from "../components/Loader";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const [login , { isLoading}] = useLoginMutation();
+
+  const { userInfo } = useSelector((state) => state.auth ); 
+ 
+  useEffect(()=>{
+    if (userInfo) {
+      navigate('/')
+    }
+  } , [navigate , userInfo])
+
   const submitHandler = async (e) => {
-    console.log("🚀 ~ file: Login.jsx:8 ~ submitHandler ~ e:", e);
     e.preventDefault();
+    try {
+      const res = await login({email , password}).unwrap();
+      dispatch(setCredentials({
+        ...res
+      }))
+      console.log(res);
+    } catch (error) {
+      toast.error(error.data.message)
+      console.log(error.data.message);
+    }
   };
 
   return (
@@ -42,9 +69,12 @@ function Login() {
           ></Form.Control>
         </Form.Group>
 
+        {isLoading && <Loader />}
+
         <Button type="submit" variant="primary" className="mt-3">
           Sign in
         </Button>
+        
 
         <Row className="py-3">
           <Col>
